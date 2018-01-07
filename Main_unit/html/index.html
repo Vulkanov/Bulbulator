@@ -1,0 +1,209 @@
+<html>
+<head>
+<title>HOME</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+ <style type="text/css">
+  body {
+font-family: Open Sans, sans-serif;
+font-size: 11pt; 
+background-color: #fff;
+color: #blue;
+}
+p{
+margin: 3px;
+}
+h1 {
+color: #blue;
+font-size: 24pt;
+font-family: Open Sans, serif;
+font-weight: normal;
+}
+.submitButton{
+padding:7px 9px 8px 9px;
+background-color: white;
+border-radius: 20px;
+font-size: 15px;
+font-family: Open Sans;
+border: none;
+margin-top: 20px;
+}
+.r{
+background-color: #7DC9F9;
+color:#fff;
+width: 50%;
+text-align:center;
+min-width: 300px;
+border-radius: 10px;
+margin-left: auto;
+margin-right: auto;
+margin-bottom: 30px;
+}
+.rl{
+font-size: 30px;
+background-color: #7DC9F9;
+color:#fff;
+width: 49%;
+text-align:center;
+min-width: 200px;
+border-radius: 10px;
+margin-left: auto;
+margin-right: auto;
+float: left;
+min-height: 190px;
+}
+.rr{
+font-size: 30px;
+background-color: #7DC9F9;
+color:#fff;
+width: 49%;
+text-align:center;
+min-width: 200px;
+border-radius: 10px;
+margin-left: auto;
+margin-right: auto;
+margin-bottom: 30px;
+float:right;
+min-height: 200px;
+}
+.r2{
+font-size: 90px;
+margin: 0;
+}
+.r1{
+margin:0;
+font-size: 35px;
+padding-top: 10px;
+}
+.r3{
+display:inline-block;
+}
+.on{
+font-size: 90px;
+margin: 0;
+color:#99F0A4;
+}
+.off{
+font-size: 90px;
+margin: 0;
+color: #F78995;
+}
+form{
+margin: 0;
+}
+
+ </style>
+ <script type="text/javascript">
+
+  function print(text, err = false) {
+   document.getElementById('output').style.color = err ? 'red' : 'green';
+   document.getElementById('output').innerHTML = text;
+  }
+  function run(type, button, command) {
+   print('');
+   localStorage['accesskey'] = document.getElementById('accesskey').value;
+   parameters = '{' + '"' + type + '"' + ':' + '"' + button + '"' + '}';
+   if(parameters.length > 0) {
+    try {
+     parameters = JSON.parse(parameters);
+    } catch(e) {
+     print('Bad JSON', true);
+	 print(parameters, true);
+     return;
+    }
+   }
+   url = "http://" + window.location.hostname + '/api/' + command;
+   var xmlhttp = new XMLHttpRequest();  
+   xmlhttp.open('POST', url, true);
+   xmlhttp.setRequestHeader("Authorization", "Bearer " + localStorage['accesskey']);
+   xmlhttp.onreadystatechange = function() {
+    if(xmlhttp.readyState == 4){
+     err = xmlhttp.status < 200 || xmlhttp.status > 299;
+     if(xmlhttp.status == 0) {
+      print('Response is not received', true);
+     } else {
+	  responseString = xmlhttp.responseText.slice(9,-2);
+	  responseString = atob(responseString);
+	  responseArray = new Array();
+		responseArray = responseString.split('|');
+		document.getElementById('temp_id').innerHTML=responseArray[0];
+		document.getElementById('hum_id').innerHTML=responseArray[1];
+		document.getElementById('press_id').innerHTML=responseArray[2];
+		if (responseArray[3] == '0') pwrstate = '<b>Выключено</b>';
+		if (responseArray[3] == '1') pwrstate = '<b>Включено</b>';
+		if (responseArray[3] == '2') pwrstate = '<b>НЕТ ВОДЫ!</b>';
+		if (responseArray[3] == '3') pwrstate = '<b>Ожидание</b>';
+		document.getElementById('pwrstate_id').innerHTML=pwrstate;
+		if (responseArray[4] == '0') ionstate = '<b>Выключен</b>';
+		if (responseArray[4] == '1') ionstate = '<b>Включен</b>';
+		document.getElementById('ionstate_id').innerHTML=ionstate;
+		if (responseArray[5] == '0') heatstate = '<b>Выключен</b>';
+		if (responseArray[5] == '1') heatstate = '<b>Включен</b>';
+		document.getElementById('heatstate_id').innerHTML = heatstate;
+		if (responseArray[6] == '1') humpow = '<b>Минимальная</b>';
+		if (responseArray[6] == '2') humpow = '<b>Средняя</b>';
+		if (responseArray[6] == '3') humpow = '<b>Максимальная</b>';
+		document.getElementById('humpow_id').innerHTML=humpow;
+		document.getElementById('humval_id').innerHTML=responseArray[7];	
+     }
+    }
+   }
+   xmlhttp.send(Object.keys(parameters).length > 0 ? JSON.stringify(parameters) : null);
+  }
+  function init() {
+   document.getElementById('accesskey').value = localStorage['accesskey'];
+   run('mode','9600','uart/read');
+   readdata();
+  }
+  function readdata() {
+   run('data','Ng==','uart/read');
+   delay(50);
+   run('mode','9600','uart/int');
+  }
+  setInterval(readdata, 30000);
+ </script>
+</head>
+    <body onLoad="init()">
+          <div class="r">
+          <p class="r1">Температура  дома</p>
+          <div class="r2" style="display:inline-block;">
+          <div class="r3" id="temp_id" onClick="readdata();"></div> 
+          <div class="r1"><sup> o</sup>C</div>
+          </div>
+          </div>
+          <div class="r">
+          <p class="r1">Относительная влажность</p>
+          <div class="r2" >
+          <div class="r3" id="hum_id" onClick="readdata();"></div> 
+          <div class="r1"> %</div>
+          </div>
+          </div>
+          <div class="r">
+          <p class="r1">Атмосферное давление</p>
+          <div class="r2" >
+          <div class="r3" id="press_id" onClick="readdata();"></div> 
+          <div class="r1"> мм. рт. ст.</div>
+          </div>
+          </div>
+          <div class="r">
+          <div class="rl">
+          <p class="r3">Питание</p>
+          <div id="pwrstate_id" onClick="run('data', 'MQ==', 'uart/read'); readdata();" class="r2" style="font-size:35px" >?</div>
+          <p class="r3">ИОН+</p>
+          <div id="ionstate_id" onClick="run('data', 'Mg==', 'uart/read'); readdata();" class="r2" style="font-size:35px" >?</div>
+          <p class="r3">Подогрев</p>
+          <div id="heatstate_id" onClick="run('data', 'Mw==', 'uart/read'); readdata();" class="r2" style="font-size:35px" >?</div>
+          </div>
+          <div class="rr">
+          <p class="r3">Сила пара</p>
+          <div id="humpow_id" onClick="run('data', 'NA==','uart/read'); readdata();" class="r2" style="font-size:35px" >?</div>
+          <p class="r3">Поддерживать</p>
+          <b><div id="humval_id" onClick="run('data', 'NQ==','uart/read'); readdata();" class="r2" style="font-size:35px" >?</div></b>
+          <p class="r3">Пароль</p>
+          <div class="r2" style="font-size:30px; height:40;" ><input type="password" id="accesskey"></div>
+          </div>
+          </div>      
+          </div>
+  <br><div id="output"></div>
+   </body>
+</html> 
