@@ -5,8 +5,10 @@
 #include <VirtualWire.h>
 #define DHTPIN 2     // what pin we're connected to
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
+#define PIN_PHOTO_SENSOR A2
 DHT dht(DHTPIN, DHTTYPE);
 BMP085 dps = BMP085();
+
 
 float H; // значение влажности
 float T; // значение температуры
@@ -14,6 +16,7 @@ long P; // давление
 const int led_pin = 13; // Пин светодиода 
 const int transmit_pin = 12; // Пин подключения передатчика
 const String RADIO_PASSWORD = "vulk";
+int Brightness;
 
 
 
@@ -28,6 +31,7 @@ void setup()
   vw_set_tx_pin(transmit_pin); 
   vw_setup(2000);       // Скорость передачи (Бит в секунду) 
   pinMode(led_pin, OUTPUT); 
+  pinMode(PIN_PHOTO_SENSOR, INPUT);
   OzOled.init();
 }
 
@@ -55,25 +59,31 @@ void barsensor() {
  //bmp.getTemperature(&Temperature); // Температура с датчика BMP180 не требуется
 }
 
- 
+void photosensor() {
+  int val = analogRead(PIN_PHOTO_SENSOR);
+  Brightness = map(val, 1023, 0, 0, 255); 
+  if (Brightness < 90) Brightness = 0;
+  else if (Brightness > 90) Brightness = 255;  
+} 
+
 // Вывод на диспоей
 void display(float disp, byte x, byte y){
-  //OzOled.clearDisplay();           //clear the screen and set start position to top left corner
-  OzOled.setNormalDisplay();       //Set display to Normal mode
-  //OzOled.setPageMode();            //Set addressing mode to Page Mode
+//OzOled.clearDisplay();           //clear the screen and set start position to top left corner
+//OzOled.setNormalDisplay();       //Set display to Normal mode
+//OzOled.setInverseDisplay(); 
+  OzOled.setPageMode();            //Set addressing mode to Page Mode
+  OzOled.setBrightness(Brightness);
+  Serial.println(Brightness);
   char tmp[10];
   dtostrf(disp, 0, 2, tmp);
   OzOled.printBigNumber(tmp, x, y, 4);
 }
 
 // Передача данных по каналу 433МГц
-
 void transmit() { 
   digitalWrite(led_pin, HIGH); // Зажигаем светодиод в начале передачи
-
-  
-int Ttransmit = round(T);
-int Htransmit = round(H);
+  int Ttransmit = round(T);
+  int Htransmit = round(H);
 //int Ptransmit = round(P);
 
 String strMsg = "vulk";
@@ -96,6 +106,7 @@ void loop()
 {
   tempsensor();
   barsensor();
+  photosensor();
   transmit();
   OzOled.clearDisplay();
   OzOled.printString("TEMP:");
